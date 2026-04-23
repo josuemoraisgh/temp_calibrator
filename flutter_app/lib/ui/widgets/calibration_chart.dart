@@ -1,8 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../domain/calibration_point.dart';
-import '../domain/sensor_model.dart';
+import '../../domain/calibration_point.dart';
+import '../../domain/sensor_model.dart';
 
 class CalibrationChart extends StatelessWidget {
   const CalibrationChart({
