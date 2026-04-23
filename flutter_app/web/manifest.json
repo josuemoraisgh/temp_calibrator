@@ -1,0 +1,12 @@
+{
+  "name": "Temp Sensor Calibrator",
+  "short_name": "TempCal",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0ea5e9",
+  "description": "Calibrador NTC / RTD / Termopares",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": []
+}
