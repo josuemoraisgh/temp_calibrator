@@ -104,4 +104,19 @@ class NtcSensor implements SensorModel {
     }
     return kToC(1.0 / invT);
   }
+
+  /// Avalia o modelo β: R(T) = R25 · exp(β · (1/T − 1/T25)).
+  double _betaR(CalibrationResult r, double tC) {
+    final beta = r.coefficients['β']!;
+    final r25 = r.coefficients['R25']!;
+    const t25k = 298.15;
+    final tk = cToK(tC);
+    return r25 * math.exp(beta * (1 / tk - 1 / t25k));
+  }
+
+  @override
+  List<ModelCurve> curves(CalibrationResult r) => [
+        ModelCurve(label: 'Steinhart–Hart', evaluate: (x) => yFromX(r, x)),
+        ModelCurve(label: 'β / R25', evaluate: (x) => _betaR(r, x)),
+      ];
 }

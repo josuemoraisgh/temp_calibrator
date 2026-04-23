@@ -4,15 +4,10 @@ import 'package:flutter/services.dart';
 import '../domain/calibration_point.dart';
 import '../domain/sensor_model.dart';
 import '../math/num_utils.dart';
+import 'theme/app_palette.dart';
 import 'widgets/calibration_chart.dart';
 import 'widgets/section_card.dart';
 
-/// Página genérica de calibração para qualquer SensorModel.
-///
-/// SOLID:
-///  - SRP: somente UI / coordenação.
-///  - OCP/DIP: depende da abstração SensorModel; novos sensores
-///    se "encaixam" sem alterar este arquivo.
 class SensorCalibrationPage extends StatefulWidget {
   const SensorCalibrationPage({super.key, required this.sensor});
   final SensorModel sensor;
@@ -37,40 +32,24 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
   late TextEditingController _xMinCtrl;
   late TextEditingController _xMaxCtrl;
 
+  Color get _accent => AppPalette.forSensorId(widget.sensor.id);
+
   @override
   void initState() {
     super.initState();
     _resetPoints();
     final r = widget.sensor.defaultRange();
-    _xMinCtrl = TextEditingController(text: r.$1.toString());
-    _xMaxCtrl = TextEditingController(text: r.$2.toString());
+    _xMinCtrl = TextEditingController(text: _fmt(r.$1));
+    _xMaxCtrl = TextEditingController(text: _fmt(r.$2));
     _autoCompute();
-  }
-
-  @override
-  void didUpdateWidget(covariant SensorCalibrationPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.sensor.id != widget.sensor.id) {
-      _resetPoints();
-      final r = widget.sensor.defaultRange();
-      _xMinCtrl.text = r.$1.toString();
-      _xMaxCtrl.text = r.$2.toString();
-      _result = null;
-      _error = null;
-      _calcYOut = '—';
-      _calcXOut = '—';
-      _autoCompute();
-    }
   }
 
   void _resetPoints() {
     _points = List.of(widget.sensor.defaultPoints);
-    _xCtrls = _points
-        .map((p) => TextEditingController(text: _fmt(p.x)))
-        .toList();
-    _yCtrls = _points
-        .map((p) => TextEditingController(text: _fmt(p.y)))
-        .toList();
+    _xCtrls =
+        _points.map((p) => TextEditingController(text: _fmt(p.x))).toList();
+    _yCtrls =
+        _points.map((p) => TextEditingController(text: _fmt(p.y))).toList();
     _calcXCtrl.text = _fmt(_points.first.x);
     _calcYCtrl.text = _fmt(_points.first.y);
   }
@@ -122,9 +101,7 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
         _result = r;
         _error = null;
       });
-    } catch (_) {
-      // silencioso na auto-compute inicial
-    }
+    } catch (_) {/* silencioso */}
   }
 
   void _onCompute() {
@@ -143,11 +120,20 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
 
   void _onReset() {
     setState(() {
+      for (final c in _xCtrls) {
+        c.dispose();
+      }
+      for (final c in _yCtrls) {
+        c.dispose();
+      }
       _resetPoints();
       _result = null;
       _error = null;
       _calcYOut = '—';
       _calcXOut = '—';
+      final r = widget.sensor.defaultRange();
+      _xMinCtrl.text = _fmt(r.$1);
+      _xMaxCtrl.text = _fmt(r.$2);
     });
     _autoCompute();
   }
@@ -179,7 +165,7 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
       setState(() => _calcYOut =
           '${y.toStringAsFixed(widget.sensor.unitY == 'mV' ? 4 : 3)} ${widget.sensor.unitY}');
     } catch (e) {
-      setState(() => _calcYOut = 'erro: $e');
+      setState(() => _calcYOut = 'erro');
     }
   }
 
@@ -191,36 +177,56 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
     try {
       final v = normFloat(_calcYCtrl.text);
       final x = widget.sensor.xFromY(_result!, v);
-      setState(() => _calcXOut = '${x.toStringAsFixed(3)} ${widget.sensor.unitX}');
+      setState(
+          () => _calcXOut = '${x.toStringAsFixed(3)} ${widget.sensor.unitX}');
     } catch (e) {
-      setState(() => _calcXOut = 'erro: $e');
+      setState(() => _calcXOut = 'erro');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final s = widget.sensor;
-
     final isWide = MediaQuery.sizeOf(context).width > 1100;
 
     final inputs = SectionCard(
-      title: 'PONTOS DE CALIBRAÇÃO  (${s.unitX}, ${s.unitY})',
+      title: 'PONTOS DE CALIBRAÇÃO',
+      icon: Icons.scatter_plot,
+      accent: _accent,
+      trailing: s.maxPoints > s.minPoints
+          ? IconButton(
+              tooltip: 'Adicionar ponto',
+              onPressed: _xCtrls.length < s.maxPoints ? _addPoint : null,
+              icon: const Icon(Icons.add_circle_outline),
+              color: _accent,
+            )
+          : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var i = 0; i < _xCtrls.length; i++)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: 10),
               child: Row(
                 children: [
-                  SizedBox(
+                  Container(
                     width: 26,
-                    child: Text('${i + 1}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        )),
+                    height: 26,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _accent.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${i + 1}',
+                      style: TextStyle(
+                        color: _accent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: _NumField(
                       controller: _xCtrls[i],
@@ -232,9 +238,7 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
                   Expanded(
                     child: _NumField(
                       controller: _yCtrls[i],
-                      label: s.unitY == 'mV'
-                          ? 'E (mV)'
-                          : 'R (${s.unitY})',
+                      label: s.unitY == 'mV' ? 'E (mV)' : 'R (${s.unitY})',
                       onSubmitted: (_) => _onCompute(),
                     ),
                   ),
@@ -248,39 +252,47 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
                 ],
               ),
             ),
+          const SizedBox(height: 4),
           Row(
             children: [
               FilledButton.icon(
                 onPressed: _onCompute,
-                icon: const Icon(Icons.calculate),
+                icon: const Icon(Icons.calculate_rounded),
                 label: const Text('Calcular'),
+                style: FilledButton.styleFrom(backgroundColor: _accent),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               OutlinedButton.icon(
                 onPressed: _onReset,
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.restart_alt),
                 label: const Text('Reset'),
               ),
-              const Spacer(),
-              if (s.maxPoints > s.minPoints)
-                IconButton.filledTonal(
-                  tooltip: 'Adicionar ponto',
-                  onPressed: _xCtrls.length < s.maxPoints ? _addPoint : null,
-                  icon: const Icon(Icons.add),
-                ),
             ],
           ),
           if (_error != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: theme.colorScheme.errorContainer,
-                borderRadius: BorderRadius.circular(8),
+                color: AppPalette.error.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: AppPalette.error.withValues(alpha: 0.3),
+                ),
               ),
-              child: Text(
-                _error!,
-                style: TextStyle(color: theme.colorScheme.onErrorContainer),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline,
+                      size: 18, color: AppPalette.error),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                          color: AppPalette.error, fontSize: 13),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -290,111 +302,146 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
 
     final coeffsCard = SectionCard(
       title: 'COEFICIENTES',
+      icon: Icons.functions,
+      accent: _accent,
       child: _result == null
-          ? Text(
+          ? const Text(
               'Preencha os pontos e clique em Calcular.',
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              style: TextStyle(color: AppPalette.textSecondary),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final entry in _result!.coefficients.entries)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(entry.key,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600)),
-                        SelectableText(
-                          _fmtCoeff(entry.value),
+                        Text(
+                          entry.key,
                           style: const TextStyle(
-                              fontFamily: 'monospace', fontSize: 13),
+                            fontWeight: FontWeight.w600,
+                            color: AppPalette.textPrimary,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppPalette.surfaceAlt,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: SelectableText(
+                            _fmtCoeff(entry.value),
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 12.5,
+                              color: AppPalette.textPrimary,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
                 if (_result!.notes.isNotEmpty) ...[
                   const Divider(height: 18),
-                  Text(_result!.notes,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    _result!.notes,
+                    style: const TextStyle(
+                      color: AppPalette.textSecondary,
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  ),
                 ],
               ],
             ),
     );
 
+    Widget calcRow({
+      required String hint,
+      required TextEditingController ctrl,
+      required VoidCallback onCompute,
+      required String output,
+    }) {
+      return Row(
+        children: [
+          Expanded(
+            child: _NumField(
+              controller: ctrl,
+              label: hint,
+              onSubmitted: (_) => onCompute(),
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: onCompute,
+            style: FilledButton.styleFrom(
+              backgroundColor: _accent,
+              minimumSize: const Size(48, 46),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+            ),
+            child: const Icon(Icons.arrow_forward_rounded, size: 18),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              height: 46,
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: AppPalette.surfaceAlt,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppPalette.border),
+              ),
+              child: SelectableText(
+                output,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 13.5,
+                  color: AppPalette.textPrimary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     final calcCard = SectionCard(
       title: 'CALCULADORA',
+      icon: Icons.swap_horiz_rounded,
+      accent: _accent,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _NumField(
-                  controller: _calcXCtrl,
-                  label: '${s.unitX} →',
-                  onSubmitted: (_) => _calcYFromX(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              FilledButton(
-                  onPressed: _calcYFromX, child: const Text('=')),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: SelectableText(_calcYOut),
-                ),
-              ),
-            ],
+          calcRow(
+            hint: '${s.unitX} → ${s.unitY}',
+            ctrl: _calcXCtrl,
+            onCompute: _calcYFromX,
+            output: _calcYOut,
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _NumField(
-                  controller: _calcYCtrl,
-                  label: '${s.unitY} →',
-                  onSubmitted: (_) => _calcXFromY(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              FilledButton(
-                  onPressed: _calcXFromY, child: const Text('=')),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: SelectableText(_calcXOut),
-                ),
-              ),
-            ],
+          const SizedBox(height: 10),
+          calcRow(
+            hint: '${s.unitY} → ${s.unitX}',
+            ctrl: _calcYCtrl,
+            onCompute: _calcXFromY,
+            output: _calcXOut,
           ),
         ],
       ),
     );
 
     final rangeCard = SectionCard(
-      title: 'GRÁFICO — FAIXA (${s.unitX})',
+      title: 'FAIXA DO GRÁFICO (${s.unitX})',
+      icon: Icons.straighten,
+      accent: _accent,
       child: Row(
         children: [
           Expanded(
             child: _NumField(
               controller: _xMinCtrl,
-              label: 'mín',
+              label: 'mínimo',
               onSubmitted: (_) => setState(() {}),
             ),
           ),
@@ -402,7 +449,7 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
           Expanded(
             child: _NumField(
               controller: _xMaxCtrl,
-              label: 'máx',
+              label: 'máximo',
               onSubmitted: (_) => setState(() {}),
             ),
           ),
@@ -427,14 +474,17 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
 
     final chart = SectionCard(
       title: '${s.unitY} × ${s.unitX}',
+      icon: Icons.show_chart,
+      accent: _accent,
       child: SizedBox(
-        height: 360,
+        height: 420,
         child: CalibrationChart(
           sensor: s,
           result: _result,
           points: _points,
           xMin: xMin,
           xMax: xMax,
+          accentColor: _accent,
         ),
       ),
     );
@@ -443,11 +493,11 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         inputs,
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         coeffsCard,
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         calcCard,
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         rangeCard,
       ],
     );
@@ -456,18 +506,18 @@ class _SensorCalibrationPageState extends State<SensorCalibrationPage> {
         ? Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(width: 460, child: left),
-              const SizedBox(width: 16),
+              SizedBox(width: 480, child: left),
+              const SizedBox(width: 18),
               Expanded(child: chart),
             ],
           )
         : Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [left, const SizedBox(height: 12), chart],
+            children: [left, const SizedBox(height: 14), chart],
           );
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
       child: body,
     );
   }
@@ -487,11 +537,7 @@ class _NumField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        isDense: true,
-        border: const OutlineInputBorder(),
-      ),
+      decoration: InputDecoration(labelText: label),
       keyboardType:
           const TextInputType.numberWithOptions(decimal: true, signed: true),
       inputFormatters: [
@@ -500,6 +546,11 @@ class _NumField extends StatelessWidget {
       textInputAction: TextInputAction.done,
       onSubmitted: onSubmitted,
       textAlign: TextAlign.right,
+      style: const TextStyle(
+        fontFamily: 'monospace',
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
     );
   }
 }

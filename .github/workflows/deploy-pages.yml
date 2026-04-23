@@ -1,4 +1,4 @@
-name: Build & Deploy to GitHub Pages
+https://github.com/LASEC-UFU/AEGISname: Build & Deploy to GitHub Pages
 
 on:
   push:

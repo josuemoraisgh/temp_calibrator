@@ -44,4 +44,17 @@ abstract class SensorModel {
 
   /// Faixa default para o gráfico (em X).
   (double, double) defaultRange();
+
+  /// Curvas a desenhar no gráfico. Default: uma curva "Modelo" usando yFromX.
+  /// Sensores com múltiplos modelos (ex.: NTC com S–H e β) sobrescrevem.
+  List<ModelCurve> curves(CalibrationResult result) => [
+        ModelCurve(label: 'Modelo', evaluate: (x) => yFromX(result, x)),
+      ];
+}
+
+/// Uma curva nomeada (label) e sua função de avaliação y = f(x).
+class ModelCurve {
+  const ModelCurve({required this.label, required this.evaluate});
+  final String label;
+  final double Function(double x) evaluate;
 }
