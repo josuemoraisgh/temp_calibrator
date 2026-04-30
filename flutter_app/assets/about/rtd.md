@@ -36,6 +36,11 @@ O programa agora trabalha assim:
 
 1. Se todos os pontos forem **negativos**, ele ajusta **A, B e C**.
 2. Se houver temperaturas **mistas** ou apenas **não negativas**, ele ajusta apenas **A e B**.
+3. Quando houver pontos mistos e a curva for avaliada em `T < 0 °C`, o programa usa `C` fixo padrão IEC:
+
+$$
+C = -4{,}183 \times 10^{-12}
+$$
 
 Isso é mostrado também no painel de **coeficientes** por meio de uma nota automática.
 
@@ -61,7 +66,7 @@ Essa segunda curva serve para comparação visual com o modelo mais completo.
 
 ## 4. Como usar este módulo
 
-1. Insira **3 ou mais** pares $(T,\ R)$.
+1. O módulo inicia com pontos padrão de **Pt100** distribuídos entre **-200 °C** e **850 °C**.
 2. Clique em **Calcular**.
 3. Veja no painel se o ajuste encontrado foi **A/B** ou **A/B/C**.
 4. Compare no gráfico a curva **Callendar-Van Dusen** com a curva **Linear / α**.

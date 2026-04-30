@@ -11,8 +11,11 @@ import '../math/linear_algebra.dart';
 /// Ajuste dos coeficientes:
 /// - Pontos somente negativos -> ajusta A, B e C.
 /// - Pontos mistos ou somente não negativos -> ajusta apenas A e B.
+///   Nesses casos, para T < 0 °C usa-se C fixo padrão IEC.
 class RtdSensor extends SensorModel {
   RtdSensor({this.r0 = 100.0, this.alpha = 0.0038459});
+
+  static const double _iecC = -4.183e-12;
 
   final double r0;
   final double alpha;
@@ -32,13 +35,18 @@ class RtdSensor extends SensorModel {
 
   @override
   List<CalibrationPoint> get defaultPoints => const [
-    CalibrationPoint(x: 5, y: 101.8),
-    CalibrationPoint(x: 32, y: 113.0),
-    CalibrationPoint(x: 36.2, y: 113.8),
+    CalibrationPoint(x: -200, y: 18.52008),
+    CalibrationPoint(x: -100, y: 60.25584),
+    CalibrationPoint(x: 0, y: 100.0),
+    CalibrationPoint(x: 100, y: 138.5055),
+    CalibrationPoint(x: 250, y: 194.098125),
+    CalibrationPoint(x: 400, y: 247.092),
+    CalibrationPoint(x: 650, y: 329.640125),
+    CalibrationPoint(x: 850, y: 390.481125),
   ];
 
   @override
-  (double, double) defaultRange() => (0, 100);
+  (double, double) defaultRange() => (-200, 850);
 
   @override
   CalibrationResult compute(List<CalibrationPoint> points) {
@@ -82,15 +90,21 @@ class RtdSensor extends SensorModel {
 
   String _buildNotes({required bool negativeOnly, required bool hasNegative}) {
     if (negativeOnly) {
-      return 'Somente temperaturas negativas: o programa ajustou A, B e C usando '
-          'R(T) = R0·(1 + A·T + B·T² + C·(T−100)·T³).';
+      return 'Somente temperaturas negativas: o programa ajustou A, B e C. '
+          'Callendar–Van Dusen: T ≥ 0 °C -> R(T) = R0·(1 + A·T + B·T²); '
+          'T < 0 °C -> R(T) = R0·(1 + A·T + B·T² + C·(T−100)·T³). '
+          'Linear/α: R(T) = R0·(1 + α·T).';
     }
     if (hasNegative) {
       return 'Temperaturas mistas: o programa ajustou apenas A e B. '
-          'O termo C·(T−100)·T³ não foi estimado.';
+          'Para T < 0 °C, a curva Callendar–Van Dusen usa C fixo IEC = -4.183×10^-12. '
+          'Callendar–Van Dusen: T ≥ 0 °C -> R(T) = R0·(1 + A·T + B·T²); '
+          'T < 0 °C -> R(T) = R0·(1 + A·T + B·T² + C·(T−100)·T³). '
+          'Linear/α: R(T) = R0·(1 + α·T).';
     }
-    return 'Somente temperaturas em T ≥ 0 °C: o programa ajustou A e B usando '
-        'R(T) = R0·(1 + A·T + B·T²).';
+    return 'Somente temperaturas em T ≥ 0 °C: o programa ajustou A e B. '
+        'Callendar–Van Dusen: R(T) = R0·(1 + A·T + B·T²). '
+        'Linear/α: R(T) = R0·(1 + α·T).';
   }
 
   @override
@@ -118,8 +132,8 @@ class RtdSensor extends SensorModel {
       return r0 * (1 + a * tC + b * tC * tC);
     }
 
-    final c = result.coefficients['C'];
-    final extra = c == null ? 0.0 : c * (tC - 100.0) * tC * tC * tC;
+    final c = result.coefficients['C'] ?? _iecC;
+    final extra = c * (tC - 100.0) * tC * tC * tC;
     return r0 * (1 + a * tC + b * tC * tC + extra);
   }
 
@@ -131,11 +145,7 @@ class RtdSensor extends SensorModel {
       return r0 * (a + 2 * b * tC);
     }
 
-    final c = result.coefficients['C'];
-    if (c == null) {
-      return r0 * (a + 2 * b * tC);
-    }
-
+    final c = result.coefficients['C'] ?? _iecC;
     final dExtra = c * (4 * tC * tC * tC - 300 * tC * tC);
     return r0 * (a + 2 * b * tC + dExtra);
   }
