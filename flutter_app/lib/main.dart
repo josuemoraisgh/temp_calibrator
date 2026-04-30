@@ -102,22 +102,19 @@ class _ShellPageState extends State<ShellPage> {
                     decoration: const BoxDecoration(
                       color: AppPalette.surface,
                       border: Border(
-                          right: BorderSide(color: AppPalette.border)),
+                        right: BorderSide(color: AppPalette.border),
+                      ),
                     ),
                     child: _LeftNav(
                       sensors: sensors,
                       index: _index,
                       collapsed: !_leftOpen,
                       onSelect: (i) => setState(() => _index = i),
-                      onToggle: () =>
-                          setState(() => _leftOpen = !_leftOpen),
+                      onToggle: () => setState(() => _leftOpen = !_leftOpen),
                     ),
                   ),
                 Expanded(
-                  child: _ChartCenter(
-                    sensor: selected,
-                    panel: _panel,
-                  ),
+                  child: _ChartCenter(sensor: selected, panel: _panel),
                 ),
                 if (isWide)
                   AnimatedContainer(
@@ -127,7 +124,8 @@ class _ShellPageState extends State<ShellPage> {
                     decoration: const BoxDecoration(
                       color: AppPalette.surface,
                       border: Border(
-                          left: BorderSide(color: AppPalette.border)),
+                        left: BorderSide(color: AppPalette.border),
+                      ),
                     ),
                     child: _rightOpen
                         ? Column(
@@ -141,8 +139,7 @@ class _ShellPageState extends State<ShellPage> {
                                 child: SensorConfigPanel(
                                   key: ValueKey('cfg-${selected.id}'),
                                   sensor: selected,
-                                  onChanged: (s) =>
-                                      setState(() => _panel = s),
+                                  onChanged: (s) => setState(() => _panel = s),
                                 ),
                               ),
                             ],
@@ -191,60 +188,13 @@ class _ChartCenter extends StatelessWidget {
           ],
         ),
         padding: const EdgeInsets.fromLTRB(18, 14, 22, 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: AppPalette.forSensorId(sensor.id)
-                        .withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.show_chart,
-                    color: AppPalette.forSensorId(sensor.id),
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  '${sensor.unitY} × ${sensor.unitX}',
-                  style: const TextStyle(
-                    color: AppPalette.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  sensor.displayName,
-                  style: const TextStyle(
-                    color: AppPalette.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            const Divider(height: 1, color: AppPalette.divider),
-            const SizedBox(height: 10),
-            Expanded(
-              child: CalibrationChart(
-                sensor: sensor,
-                result: result,
-                points: pts,
-                xMin: xMin,
-                xMax: xMax,
-                accentColor: AppPalette.forSensorId(sensor.id),
-              ),
-            ),
-          ],
+        child: CalibrationChart(
+          sensor: sensor,
+          result: result,
+          points: pts,
+          xMin: xMin,
+          xMax: xMax,
+          accentColor: AppPalette.forSensorId(sensor.id),
         ),
       ),
     );
@@ -276,22 +226,22 @@ class _AppHeader extends StatelessWidget {
         bottom: false,
         child: Row(
           children: [
-            Builder(builder: (ctx) {
-              return IconButton(
-                tooltip: 'Sensores',
-                icon: Icon(
-                  useDrawers
-                      ? Icons.menu
-                      : (leftOpen
-                          ? Icons.chevron_left
-                          : Icons.menu_open),
-                  color: Colors.white,
-                ),
-                onPressed: () => useDrawers
-                    ? Scaffold.of(ctx).openDrawer()
-                    : onToggleLeft(),
-              );
-            }),
+            Builder(
+              builder: (ctx) {
+                return IconButton(
+                  tooltip: 'Sensores',
+                  icon: Icon(
+                    useDrawers
+                        ? Icons.menu
+                        : (leftOpen ? Icons.chevron_left : Icons.menu_open),
+                    color: Colors.white,
+                  ),
+                  onPressed: () => useDrawers
+                      ? Scaffold.of(ctx).openDrawer()
+                      : onToggleLeft(),
+                );
+              },
+            ),
             const SizedBox(width: 4),
             Container(
               width: 38,
@@ -299,11 +249,9 @@ class _AppHeader extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.25)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
               ),
-              child: const Icon(Icons.science_outlined,
-                  color: Colors.white, size: 20),
+              child: Icon(_iconFor(sensor.id), color: Colors.white, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -331,14 +279,12 @@ class _AppHeader extends StatelessWidget {
               ),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               margin: const EdgeInsets.only(right: 6),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.25)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -360,23 +306,24 @@ class _AppHeader extends StatelessWidget {
             IconButton(
               tooltip: 'Sobre o modelo',
               icon: const Icon(Icons.info_outline, color: Colors.white),
-              onPressed: () =>
-                  showSensorAboutDialog(context, sensor: sensor),
+              onPressed: () => showSensorAboutDialog(context, sensor: sensor),
             ),
-            Builder(builder: (ctx) {
-              return IconButton(
-                tooltip: 'Configurações',
-                icon: Icon(
-                  useDrawers
-                      ? Icons.tune
-                      : (rightOpen ? Icons.chevron_right : Icons.tune),
-                  color: Colors.white,
-                ),
-                onPressed: () => useDrawers
-                    ? Scaffold.of(ctx).openEndDrawer()
-                    : onToggleRight(),
-              );
-            }),
+            Builder(
+              builder: (ctx) {
+                return IconButton(
+                  tooltip: 'Configurações',
+                  icon: Icon(
+                    useDrawers
+                        ? Icons.tune
+                        : (rightOpen ? Icons.chevron_right : Icons.tune),
+                    color: Colors.white,
+                  ),
+                  onPressed: () => useDrawers
+                      ? Scaffold.of(ctx).openEndDrawer()
+                      : onToggleRight(),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -565,8 +512,7 @@ class _NavTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           onTap: onTap,
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             child: Row(
               children: [
                 Container(
@@ -576,8 +522,7 @@ class _NavTile extends StatelessWidget {
                     color: color.withValues(alpha: selected ? 0.18 : 0.10),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child:
-                      Icon(_iconFor(sensor.id), color: color, size: 18),
+                  child: Icon(_iconFor(sensor.id), color: color, size: 18),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -588,8 +533,7 @@ class _NavTile extends StatelessWidget {
                           ? AppPalette.textPrimary
                           : AppPalette.textSecondary,
                       fontSize: 13.5,
-                      fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
                 ),
@@ -625,8 +569,11 @@ class _Footer extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.school_outlined,
-                  size: 14, color: AppPalette.textMuted),
+              const Icon(
+                Icons.school_outlined,
+                size: 14,
+                color: AppPalette.textMuted,
+              ),
               const SizedBox(width: 6),
               Text(
                 'LASEC · UFU',
@@ -673,8 +620,9 @@ class _SensorDrawer extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration:
-                  const BoxDecoration(gradient: AppPalette.headerGradient),
+              decoration: const BoxDecoration(
+                gradient: AppPalette.headerGradient,
+              ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -718,5 +666,24 @@ class _SensorDrawer extends StatelessWidget {
 IconData _iconFor(String id) {
   if (id == 'ntc') return Icons.thermostat_auto;
   if (id == 'rtd') return Icons.cable;
-  return Icons.flash_on;
+  switch (id) {
+    case 'tc_K':
+      return Icons.bolt;
+    case 'tc_J':
+      return Icons.electric_meter;
+    case 'tc_T':
+      return Icons.device_thermostat;
+    case 'tc_E':
+      return Icons.flash_on;
+    case 'tc_N':
+      return Icons.timeline;
+    case 'tc_S':
+      return Icons.multiline_chart;
+    case 'tc_R':
+      return Icons.show_chart;
+    case 'tc_B':
+      return Icons.auto_graph;
+    default:
+      return Icons.science_outlined;
+  }
 }

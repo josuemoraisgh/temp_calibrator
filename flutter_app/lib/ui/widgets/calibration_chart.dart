@@ -33,8 +33,9 @@ class CalibrationChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hi = xMax > xMin ? xMax : xMin + 1;
-    final curves =
-        result == null ? const <ModelCurve>[] : sensor.curves(result!);
+    final curves = result == null
+        ? const <ModelCurve>[]
+        : sensor.curves(result!);
 
     final curveLines = <_CurveData>[];
     for (var i = 0; i < curves.length; i++) {
@@ -53,8 +54,7 @@ class CalibrationChart extends StatelessWidget {
         } catch (_) {}
       }
       if (spots.isNotEmpty) {
-        curveLines
-            .add(_CurveData(label: c.label, color: color, spots: spots));
+        curveLines.add(_CurveData(label: c.label, color: color, spots: spots));
       }
     }
 
@@ -80,25 +80,45 @@ class CalibrationChart extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppPalette.border),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 14, 22, 14),
+      padding: const EdgeInsets.fromLTRB(16, 14, 22, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (curveLines.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: Wrap(
-                spacing: 18,
-                runSpacing: 6,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final c in curveLines)
-                    _LegendChip(color: c.color, label: c.label),
-                  if (dataDots.isNotEmpty)
-                    const _LegendChip(
-                      color: AppPalette.textPrimary,
-                      label: 'Pontos',
-                      isDot: true,
+                  Expanded(
+                    child: Wrap(
+                      spacing: 18,
+                      runSpacing: 6,
+                      children: [
+                        for (final c in curveLines)
+                          _LegendChip(color: c.color, label: c.label),
+                        if (dataDots.isNotEmpty)
+                          const _LegendChip(
+                            color: AppPalette.textPrimary,
+                            label: 'Pontos',
+                            isDot: true,
+                          ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(width: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      sensor.displayName,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        color: AppPalette.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -112,17 +132,18 @@ class CalibrationChart extends StatelessWidget {
                 backgroundColor: Colors.white,
                 gridData: FlGridData(
                   show: true,
-                  getDrawingHorizontalLine: (_) => const FlLine(
-                      color: Color(0xFFEAEEF3), strokeWidth: 1),
-                  getDrawingVerticalLine: (_) => const FlLine(
-                      color: Color(0xFFEAEEF3), strokeWidth: 1),
+                  getDrawingHorizontalLine: (_) =>
+                      const FlLine(color: Color(0xFFEAEEF3), strokeWidth: 1),
+                  getDrawingVerticalLine: (_) =>
+                      const FlLine(color: Color(0xFFEAEEF3), strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
                   rightTitles: const AxisTitles(),
                   topTitles: const AxisTitles(),
                   bottomTitles: AxisTitles(
+                    axisNameSize: 36,
                     axisNameWidget: Padding(
-                      padding: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.only(top: 10),
                       child: Text(
                         'Temperatura (${sensor.unitX})',
                         style: const TextStyle(
@@ -134,25 +155,31 @@ class CalibrationChart extends StatelessWidget {
                     ),
                     sideTitles: const SideTitles(
                       showTitles: true,
-                      reservedSize: 30,
+                      reservedSize: 38,
                       getTitlesWidget: _bottomLabel,
                     ),
                   ),
                   leftTitles: AxisTitles(
+                    axisNameSize: 42,
                     axisNameWidget: Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Text(
-                        sensor.unitY,
-                        style: const TextStyle(
-                          color: AppPalette.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _yAxisTitle(sensor),
+                          maxLines: 1,
+                          softWrap: false,
+                          style: const TextStyle(
+                            color: AppPalette.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
                     sideTitles: const SideTitles(
                       showTitles: true,
-                      reservedSize: 56,
+                      reservedSize: 44,
                       getTitlesWidget: _leftLabel,
                     ),
                   ),
@@ -194,9 +221,9 @@ class CalibrationChart extends StatelessWidget {
                       belowBarData: i == 0 && curveLines.length == 1
                           ? BarAreaData(
                               show: true,
-                              color: curveLines[i]
-                                  .color
-                                  .withValues(alpha: 0.07),
+                              color: curveLines[i].color.withValues(
+                                alpha: 0.07,
+                              ),
                             )
                           : BarAreaData(show: false),
                     ),
@@ -207,8 +234,7 @@ class CalibrationChart extends StatelessWidget {
                       barWidth: 0,
                       dotData: FlDotData(
                         show: true,
-                        getDotPainter: (spot, _, __, ___) =>
-                            FlDotCirclePainter(
+                        getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
                           radius: 5,
                           color: Colors.white,
                           strokeWidth: 2.4,
@@ -298,4 +324,9 @@ String _fmt(double v) {
   if (a >= 100) return v.toStringAsFixed(0);
   if (a >= 10) return v.toStringAsFixed(1);
   return v.toStringAsFixed(2);
+}
+
+String _yAxisTitle(SensorModel sensor) {
+  if (sensor.unitY == 'mV') return 'Tensão (${sensor.unitY})';
+  return 'Resistência (${sensor.unitY})';
 }
